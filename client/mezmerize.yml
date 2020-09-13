@@ -1,0 +1,84 @@
+Parameters:
+  Route53HostedZone:
+    Type: String
+    Default: peterevers.nl.
+  DomainName:
+    Type: String
+    Default: piano.peterevers.nl
+  IamCertificateId:
+    Type: String
+    Default: ASCAVR6NULOUWQD77WHRW
+
+Resources:
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+        BucketName: !Ref DomainName
+        AccessControl: "PublicRead"
+        WebsiteConfiguration:
+            ErrorDocument: index.html
+            IndexDocument: index.html
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Join
+              - ""
+              - - "arn:aws:s3:::"
+                - !Ref WebBucket
+                - /*
+      Bucket: !Ref WebBucket      
+
+  DNS:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !Ref Route53HostedZone
+      RecordSets:
+        - Name: !Ref DomainName
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2 # This means Cloudfront :D
+            DNSName: !GetAtt [CloudFront, DomainName]
+
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+      - WebBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !Join [".", [!Ref DomainName, "s3.amazonaws.com"]]
+            Id: piano.peterevers.nl
+            S3OriginConfig: {}
+        Enabled: "true"
+        HttpVersion: "http2"
+        DefaultRootObject: index.html
+        PriceClass: "PriceClass_100"
+        Aliases:
+          - !Ref DomainName
+        DefaultCacheBehavior:
+          Compress: true
+          AllowedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: piano.peterevers.nl
+          ForwardedValues:
+            QueryString: "false"
+            Cookies:
+                Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        ViewerCertificate:
+          IamCertificateId: !Ref IamCertificateId
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2018
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 86400
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: "/index.html"
