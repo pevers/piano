@@ -49,7 +49,7 @@ To add SSL for a domain, follow these steps
 
 ```
 # pip install certbot certbot-dns-route53
-domain=peterevers.nl
+domain=piano.peterevers.nl
 certbot certonly \
   --config-dir /tmp/cert/config \
   --work-dir /tmp/cert/work \

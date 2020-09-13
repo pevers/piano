@@ -36,3 +36,14 @@
     transform: rotate(360deg);
   }
 }
+
+.fadeIn {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 1s linear;
+}
+
+.fadeOut {
+  opacity: 0;
+  transition: visibility 0s 1s, opacity 1s linear;
+}

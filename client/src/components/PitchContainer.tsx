@@ -1,3 +1,4 @@
+import 'get-float-time-domain-data-polyfill'  // TODO: Fork pitch-detection to support Uint8Array and pass down byteTimeDomain
 import { AutocorrelationDetector } from "mezmerize-detection-wasm";
 import React, { Component } from "react";
 import { Key, keyFromFrequency, randomKey, PianoStave } from "./Piano";
@@ -6,6 +7,7 @@ import { Score } from "./Score";
 export type PitchState = {
   staves: PianoStave[];
   stream: MediaStream;
+  finished: boolean;
 };
 
 export type PitchProps = {
@@ -29,7 +31,8 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
     super(props);
     this.state = {
       staves: this.generateRandomStaves(4),
-      ...props
+      finished: false,
+      ...props,
     };
   }
 
@@ -39,7 +42,18 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
     this.analyser.fftSize = 1024;
     this.mediaStreamSource.connect(this.analyser);
 
+    // DEBUGGING
+    document.addEventListener("keydown", this.keyDown, false);
+
     this.mainLoop();
+  }
+
+  keyDown = (event: KeyboardEvent) => {
+    if (event.key === 'a') {
+      this.setState({
+        finished: true,
+      });
+    }
   }
 
   mainLoop = () => {
@@ -61,9 +75,9 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
     // This threshold should depend on the assignment size
     if (frequency > 200 && frequency < 500 && clarity > 0.8) {
       const key = keyFromFrequency(frequency);
-      console.log("key", key);
-      console.log("frequency", frequency);
-      console.log("clarity", clarity);
+      // console.log("key", key);
+      // console.log("frequency", frequency);
+      // console.log("clarity", clarity);
 
       // We currently have the assumption that two of the same notes cannot follow each other (TODO)
       const lastKey = this.lastKey;
@@ -71,8 +85,8 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
       const lastTimeDiff = now - this.lastKeyPlayed;
 
       // TODO: Extract threshold and lag
-      // 170 ms = audio stimulus
-      if (!lastKey || (key !== lastKey && lastTimeDiff > 170)) {
+      // 170 ms = audio stimulus threshold
+      if (!lastKey || (lastKey !== key && lastTimeDiff > 170)) {
         this.lastKey = key;
         this.keyBuffer.push({
           key,
@@ -81,13 +95,11 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
         this.lastKeyPlayed = now;
 
         // TODO: For simplicity we just skip to the next at 4
+        this.compareState();
         if (this.keyBuffer.length === 4) {
           this.setState({
-            staves: this.generateRandomStaves(4),
+            finished: true,
           });
-          this.keyBuffer = [];
-        } else {
-          this.compareState();
         }
       }
     }
@@ -147,12 +159,21 @@ export class PitchContainer extends Component<PitchProps, PitchState> {
     }
     return staves;
   };
-
-  private gotError(error: Error) {
-    console.error(error);
+  
+  private nextStave = () => {
+    this.setState((oldState: PitchState) => ({
+      staves: oldState.finished ? this.generateRandomStaves(4) : oldState.staves,
+      finished: false
+    }));
+    this.keyBuffer = [];
+    this.lastKey = undefined;
   }
 
   public render() {
-    return <Score staves={this.state.staves} />;
+    return (
+      <div className={this.state.finished ? "fadeOut" : "fadeIn"} onTransitionEnd={this.nextStave}>
+        <Score staves={this.state.staves} />
+      </div>
+    );
   }
 }
