@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import "./App.css";
 
 import { PitchContainer } from "./components/PitchContainer";
+import { SkillContainer } from "./components/SkillContainer";
 
 function App() {
   // TODO: Maybe move all stream state to this component
@@ -40,13 +41,15 @@ function App() {
     <div className="App">
       <header className="App-header">
         <Container maxWidth="sm">
-          {stream ? (
-            <PitchContainer stream={stream}/>
+        <SkillContainer/>
+          {/* {stream ? (
+            <SkillContainer/>
+            // <PitchContainer stream={stream}/>
           ) : (
             <Button variant="contained" color="primary" onClick={getMic}>
               Start
             </Button>
-          )}
+          )} */}
         </Container>
       </header>
     </div>

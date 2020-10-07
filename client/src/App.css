@@ -37,6 +37,7 @@
   }
 }
 
+/* MOVE TO PITCHCONTAINER */
 .fadeIn {
   visibility: visible;
   opacity: 1;
@@ -46,4 +47,9 @@
 .fadeOut {
   opacity: 0;
   transition: visibility 0s 1s, opacity 1s linear;
+}
+
+/* MOVE TO SkillContainer CSS */
+.tippy-tooltip {
+  color: #000 !important;
 }
